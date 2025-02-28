@@ -230,7 +230,7 @@ class TiledCamera(Camera):
     def _update_buffers_impl(self, env_ids: Sequence[int]):
         # Increment frame count
         self._frame[env_ids] += 1
-
+        self._update_poses(env_ids)
         # Extract the flattened image buffer
         for data_type, annotator in self._annotators.items():
             # check whether returned data is a dict (used for segmentation)

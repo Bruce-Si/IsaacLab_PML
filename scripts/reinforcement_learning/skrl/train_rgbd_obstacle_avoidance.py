@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+import datetime
 
 # import the skrl components to build the RL system
 from skrl.agents.torch.ppo import PPO, PPO_DEFAULT_CONFIG
@@ -17,7 +18,8 @@ from skrl.utils import set_seed
 
 # seed for reproducibility
 set_seed(41)  # e.g. `set_seed(42)` for fixed seed
-
+now = datetime.datetime.now()
+now_string = now.strftime('%Y_%m_%d_%H_%M')
 
 class resblock(nn.Module):
     def __init__(self, ch_in, ch_out, stride=1, size=[112, 112]):
@@ -60,15 +62,27 @@ class CNN_resnet10(GaussianMixin, DeterministicMixin, Model):
         GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction)
         DeterministicMixin.__init__(self, clip_actions)
 
-        self.features_extractor = nn.Sequential(nn.Conv2d(1, 8, 5, 2, 2),
-                                 nn.LayerNorm([112, 112]),
-                                 nn.ReLU(),
-                                 resblock(8, 16, stride=2, size=[112, 112]),
-                                 resblock(16, 32, stride=2, size=[56, 56]),
-                                 resblock(32, 64, stride=1, size=[28, 28]),
-                                 resblock(64, 64, stride=1, size=[28, 28]),
-                                 nn.Conv2d(64, 1, 1, 1),
-                                 nn.Flatten(start_dim=1))
+        # input 224*224
+        # self.features_extractor = nn.Sequential(nn.Conv2d(1, 8, 5, 2, 2),
+        #                          nn.LayerNorm([112, 112]),
+        #                          nn.ReLU(),
+        #                          resblock(8, 16, stride=2, size=[112, 112]),
+        #                          resblock(16, 32, stride=2, size=[56, 56]),
+        #                          resblock(32, 64, stride=1, size=[28, 28]),
+        #                          resblock(64, 64, stride=1, size=[28, 28]),
+        #                          nn.Conv2d(64, 1, 1, 1),
+        #                          nn.Flatten(start_dim=1))
+
+        # input 112*112
+        self.features_extractor = nn.Sequential(nn.Conv2d(1, 8, 3, 1, 1),
+                                                nn.LayerNorm([112, 112]),
+                                                nn.ReLU(),
+                                                resblock(8, 16, stride=2, size=[112, 112]),
+                                                resblock(16, 32, stride=2, size=[56, 56]),
+                                                resblock(32, 64, stride=1, size=[28, 28]),
+                                                resblock(64, 64, stride=1, size=[28, 28]),
+                                                nn.Conv2d(64, 1, 1, 1),
+                                                nn.Flatten(start_dim=1))
 
         self.state_extractor = nn.Sequential(nn.Flatten(start_dim=1))
 
@@ -108,7 +122,9 @@ class CNN_resnet10(GaussianMixin, DeterministicMixin, Model):
 
 
 # load and wrap the Isaac Lab environment
-env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v0", num_envs=128)
+task_name = "Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1"
+# env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v0", num_envs=128)
+env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1", num_envs=128)
 env = wrap_env(env)
 
 device = env.device
@@ -154,9 +170,15 @@ cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": dev
 cfg["value_preprocessor"] = RunningStandardScaler
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
-cfg["experiment"]["write_interval"] = 60
-cfg["experiment"]["checkpoint_interval"] = 600
-cfg["experiment"]["directory"] = "runs/torch/Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v0"
+cfg["experiment"]["write_interval"] = 600
+cfg["experiment"]["checkpoint_interval"] = 6000
+cfg["experiment"]["directory"] = "runs/torch/" + task_name
+cfg["experiment"]["wandb"] = True
+cfg["experiment"]["wandb_kwargs"] = {
+    "entity": "siwufei",
+    "project": "IsaacLab",
+    "name": now_string + "_" + task_name,
+}
 
 agent = PPO(models=models,
             memory=memory,
@@ -165,9 +187,11 @@ agent = PPO(models=models,
             action_space=env.action_space,
             device=device)
 
+# Load the checkpoint
+# agent.load("./runs/torch/Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1/25-03-04_10-02-49-453529_PPO/checkpoints/agent_137400.pt")
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 48000, "headless": False}
+cfg_trainer = {"timesteps": 4800000, "headless": False}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # start training

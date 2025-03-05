@@ -13,8 +13,7 @@ class QuadcopterPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 50
     max_iterations = 100000
     save_interval = 500
-    # experiment_name = "quadcopter_pose_direct"
-    experiment_name = "Isaac-Quadcopter-Lidar-Obstacle-Avoidance-v0"
+    experiment_name = "Isaac-Quadcopter-Camera-Obstacle-Avoidance-v1"
     empirical_normalization = False
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,

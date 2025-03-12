@@ -10,6 +10,8 @@ import math
 import torch
 import torch.nn.functional as F
 import torchvision.transforms.functional as tvf
+import cv2
+import numpy as np
 
 import isaaclab.envs.mdp as mdp
 import isaaclab.sim as sim_utils
@@ -75,7 +77,7 @@ class EventCfg:
 @configclass
 class RgbdObstacleAvoidanceEnvCfg(DirectRLEnvCfg):
     # env
-    episode_length_s = 7.5
+    episode_length_s = 7.5 * 2
     dt = 1 / 50
     decimation = 2
     action_space = 4
@@ -150,8 +152,11 @@ class RgbdObstacleAvoidanceEnvCfg(DirectRLEnvCfg):
     #     mesh_prim_paths=["/World/ground"],
     # )
     # scaling_lidar_data_b = 1 / 6.0
+    # contact_sensor: ContactSensorCfg = ContactSensorCfg(
+    #     prim_path="/World/envs/env_.*/Robot/.*", history_length=2, update_period=dt, track_air_time=False
+    # )
     contact_sensor: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/.*", history_length=2, update_period=dt, track_air_time=False
+        prim_path="/World/envs/env_.*/Robot/.*", history_length=2, update_period=dt, track_air_time=True, force_threshold=1.0
     )
 
     # camera
@@ -243,6 +248,7 @@ class RgbdObstacleAvoidanceEnv(DirectRLEnv):
         # Get specific body indices
         self._body_id, _ = self._robot.find_bodies("body")
         self._undesired_contact_body_ids = SceneEntityCfg("contact_sensor", body_names=".*").body_ids
+        # self._undesired_contact_body_ids, _ = self._robot.find_bodies(['body', 'm1_prop', 'm2_prop', 'm3_prop', 'm4_prop'])
         self._robot_mass = self._robot.root_physx_view.get_masses()[0].sum()
         self._gravity_magnitude = torch.tensor(self.sim.cfg.gravity, device=self.device).norm()
         self._robot_weight = (self._robot_mass * self._gravity_magnitude).item()
@@ -323,6 +329,24 @@ class RgbdObstacleAvoidanceEnv(DirectRLEnv):
         depth_img_norm = depth_img.float().mul(1 / 20.0).clamp(0.0, 1.0)
         depth_img_norm[:, :, :, 0] = tvf.normalize(depth_img_norm[:, :, :, 0], mean=0.2, std=0.3, inplace=False)
         self.camera_obs = depth_img
+
+        #
+        img_name = "Depth Image"
+        cv2.namedWindow(img_name, cv2.WINDOW_AUTOSIZE)
+        img = depth_img[0, :, :, 0].cpu().numpy()
+        img_normalized = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+        img_uint8 = np.uint8(img_normalized)
+        img_colored = cv2.applyColorMap(img_uint8, cv2.COLORMAP_VIRIDIS)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        # text = "step_num: " + str(infos[0]["step_num"])
+        org = (5, 15)
+        fontScale = 0.3
+        color = (0, 0, 255)
+        thickness = 1
+        # cv2.putText(img_colored, text, org, font, fontScale, color, thickness)
+        cv2.resizeWindow(img_name, img_colored.shape[1] * 1, img_colored.shape[0] * 1)
+        cv2.imshow(img_name, img_colored)
+        key = cv2.waitKey(1)
 
         # state
         state_feature = torch.cat(
@@ -455,6 +479,8 @@ class RgbdObstacleAvoidanceEnv(DirectRLEnv):
         net_contact_forces = self._contact_sensor.data.net_forces_w_history
         collided = torch.any(torch.max(torch.norm(net_contact_forces[:, :, self._undesired_contact_body_ids],
                                                   dim=-1), dim=1)[0] > 0.0001, dim=1)
+        if collided[0]:
+            pass
         died = torch.logical_or(out_of_height_bounds, collided)
         return died, time_out
 

@@ -124,7 +124,7 @@ class CNN_resnet10(GaussianMixin, DeterministicMixin, Model):
 # load and wrap the Isaac Lab environment
 task_name = "Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1"
 # env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v0", num_envs=128)
-env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1", num_envs=1, cli_args=["--distributed"])
+env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1", num_envs=1, cli_args=["--distributed", "--enable_cameras", "--video"])
 env = wrap_env(env)
 
 device = env.device

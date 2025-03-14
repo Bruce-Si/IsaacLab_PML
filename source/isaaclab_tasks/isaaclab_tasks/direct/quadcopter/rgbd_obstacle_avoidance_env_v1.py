@@ -330,23 +330,25 @@ class RgbdObstacleAvoidanceEnv(DirectRLEnv):
         depth_img_norm[:, :, :, 0] = tvf.normalize(depth_img_norm[:, :, :, 0], mean=0.2, std=0.3, inplace=False)
         self.camera_obs = depth_img
 
-        #
-        img_name = "Depth Image"
-        cv2.namedWindow(img_name, cv2.WINDOW_AUTOSIZE)
-        img = depth_img[0, :, :, 0].cpu().numpy()
-        img_normalized = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
-        img_uint8 = np.uint8(img_normalized)
-        img_colored = cv2.applyColorMap(img_uint8, cv2.COLORMAP_VIRIDIS)
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        # text = "step_num: " + str(infos[0]["step_num"])
-        org = (5, 15)
-        fontScale = 0.3
-        color = (0, 0, 255)
-        thickness = 1
-        # cv2.putText(img_colored, text, org, font, fontScale, color, thickness)
-        cv2.resizeWindow(img_name, img_colored.shape[1] * 1, img_colored.shape[0] * 1)
-        cv2.imshow(img_name, img_colored)
-        key = cv2.waitKey(1)
+        # display camera view
+        display = True
+        if display:
+            img_name = "Depth Image"
+            cv2.namedWindow(img_name, cv2.WINDOW_AUTOSIZE)
+            img = depth_img[0, :, :, 0].cpu().numpy()
+            img_normalized = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+            img_uint8 = np.uint8(img_normalized)
+            img_colored = cv2.applyColorMap(img_uint8, cv2.COLORMAP_VIRIDIS)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            # text = "step_num: " + str(infos[0]["step_num"])
+            org = (5, 15)
+            fontScale = 0.3
+            color = (0, 0, 255)
+            thickness = 1
+            # cv2.putText(img_colored, text, org, font, fontScale, color, thickness)
+            # cv2.resizeWindow(img_name, img_colored.shape[1] * 1, img_colored.shape[0] * 1)
+            cv2.imshow(img_name, img_colored)
+            key = cv2.waitKey(1)
 
         # state
         state_feature = torch.cat(
@@ -602,7 +604,8 @@ class RgbdObstacleAvoidanceEnv(DirectRLEnv):
         if debug_vis:
             if not hasattr(self, "goal_pos_visualizer"):
                 marker_cfg = CUBOID_MARKER_CFG.copy()
-                marker_cfg.markers["cuboid"].size = (0.05, 0.05, 0.05)
+                # marker_cfg.markers["cuboid"].size = (0.05, 0.05, 0.05)
+                marker_cfg.markers["cuboid"].size = (1.0, 1.0, 1.0)
                 # -- goal pose
                 marker_cfg.prim_path = "/Visuals/Command/goal_position"
                 self.goal_pos_visualizer = VisualizationMarkers(marker_cfg)

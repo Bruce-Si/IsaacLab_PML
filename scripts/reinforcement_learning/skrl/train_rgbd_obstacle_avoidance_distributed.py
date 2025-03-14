@@ -147,12 +147,8 @@ def load_isaaclab_env(
     parser.add_argument("--task", type=str, default=None, help="Name of the task.")
     parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
     parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
-    parser.add_argument(
-        "--disable_fabric", action="store_true", default=False, help="Disable fabric and use USD I/O operations."
-    )
-    parser.add_argument(
-        "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
-    )
+    parser.add_argument("--disable_fabric", action="store_true", default=False, help="Disable fabric and use USD I/O operations.")
+    parser.add_argument("--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes.")
 
     # launch the simulation app
 
@@ -187,6 +183,8 @@ def load_isaaclab_env(
 
     # load environment
     env = gymnasium.make(args.task, cfg=cfg, render_mode="rgb_array" if args.video else None)
+
+
 
     return env
 
@@ -295,7 +293,7 @@ class CNN_resnet10(GaussianMixin, DeterministicMixin, Model):
 # load and wrap the Isaac Lab environment
 task_name = "Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1"
 # env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v0", num_envs=128)
-env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1", num_envs=1, cli_args=["--distributed"])
+env = load_isaaclab_env(task_name="Isaac-Quadcopter-RGBD-Obstacle-Avoidance-v1", num_envs=128, cli_args=["--distributed", "--enable_cameras"])
 env = wrap_env(env)
 
 device = env.device

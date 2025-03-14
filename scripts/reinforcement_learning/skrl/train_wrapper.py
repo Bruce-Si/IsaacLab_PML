@@ -294,6 +294,15 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         print_dict(video_kwargs, nesting=4)
         env = gym.wrappers.RecordVideo(env, **video_kwargs)
 
+    # wandb
+    now = datetime.datetime.now()
+    now_string = now.strftime('%Y_%m_%d_%H_%M')
+    agent_cfg["agent"]["experiment"]["wandb_kwargs"] = {
+    "entity": "siwufei",
+    "project": "IsaacLab",
+    "name": now_string + "_" + args_cli.task,
+}
+
     # wrap around environment for skrl
     env = SkrlVecEnvWrapper(env, ml_framework=args_cli.ml_framework)  # same as: `wrap_env(env, wrapper="auto")`
 

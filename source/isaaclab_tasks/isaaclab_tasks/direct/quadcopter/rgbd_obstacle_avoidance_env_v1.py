@@ -331,7 +331,7 @@ class RgbdObstacleAvoidanceEnv(DirectRLEnv):
         self.camera_obs = depth_img
 
         # display camera view
-        display = True
+        display = False
         if display:
             img_name = "Depth Image"
             cv2.namedWindow(img_name, cv2.WINDOW_AUTOSIZE)

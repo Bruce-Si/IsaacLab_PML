@@ -121,6 +121,7 @@ agent:
     checkpoint_interval: auto
 
 
+
 # Sequential trainer
 # https://skrl.readthedocs.io/en/latest/api/trainers/sequential.html
 trainer:
